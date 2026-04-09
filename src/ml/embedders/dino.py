@@ -22,8 +22,8 @@ class DinoEmbedder:
         # 2. Faster Preprocessing
         # Using Bilinear and Avoiding redundant conversions
         self.preprocess = transforms.Compose([
-            transforms.Resize(224, interpolation=transforms.InterpolationMode.BILINEAR),
-            transforms.CenterCrop(224),
+            transforms.Resize(518, interpolation=transforms.InterpolationMode.BICUBIC),
+            transforms.CenterCrop(518),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -53,7 +53,6 @@ class DinoEmbedder:
         input_tensor = self.preprocess(img).unsqueeze(0).to(self.device, dtype=self.dtype)
         
         embedding = self.model(input_tensor)
-        embedding = torch.nn.functional.normalize(embedding, dim=1)
         
         # Convert back to float32 for the list return to maintain precision in JSON
         return embedding.detach().cpu().to(torch.float32).numpy()[0].tolist()

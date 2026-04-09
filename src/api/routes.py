@@ -46,8 +46,8 @@ async def search_image(
             similar_path = None
             similarity_percent = 0.0
         else:
-            _, similar_path, distance = result
-            similarity_percent = (1 - (distance / 2)) * 100  # distance is 0-2
+            _, similar_path, similarity_percent = result
+            print(f"Similarity computed: {similarity_percent}%")
 
         stored = False
         if future_use:

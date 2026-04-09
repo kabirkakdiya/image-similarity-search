@@ -18,6 +18,8 @@ images/
 
 # DB
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 
 # Others

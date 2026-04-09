@@ -1,57 +1,53 @@
 from typing import List, Optional, Tuple
-from sqlite_vec import serialize_float32
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from models.models import Image
 
-def get_image_by_sha256(conn, sha256: str) -> Optional[str]:
-    cur = conn.cursor()
-    cur.execute("SELECT image_path FROM images WHERE sha256 = ?", (sha256,))
-    row = cur.fetchone()
-    return row["image_path"] if row else None
+def get_image_by_sha256(session: Session, sha256: str) -> Optional[str]:
+    image = session.query(Image).filter(Image.sha256 == sha256).first()
+    return image.image_path if image else None
 
 def insert_image_metadata_and_vector(
-    conn,
+    session: Session,
     image_path: str,
     sha256: str,
     embedding: List[float]
 ) -> Optional[int]:
-    cur = conn.cursor()
-
-    cur.execute("""
-        INSERT INTO images (image_path, sha256)
-        VALUES (?, ?)
-        ON CONFLICT(sha256) DO NOTHING
-        RETURNING id
-    """, (image_path, sha256))
-
-    row = cur.fetchone()
-    if not row:
+    new_image = Image(
+        image_path=image_path,
+        sha256=sha256,
+        embedding=embedding
+    )
+    session.add(new_image)
+    try:
+        session.commit()
+        session.refresh(new_image)
+        return new_image.id
+    except IntegrityError:
+        session.rollback()
         return None
-
-    image_id = row["id"]
-
-    cur.execute("""
-        INSERT INTO vec_images (image_id, embedding)
-        VALUES (?, ?)
-    """, (image_id, serialize_float32(embedding)))
-
-    conn.commit()
-    return image_id
 
 def find_most_similar(
-    conn, query_embedding: List[float]
+    session: Session, query_embedding: List[float]
 ) -> Optional[Tuple[int, str, float]]:
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT
-            i.id,
-            i.image_path,
-            v.distance
-        FROM vec_images v
-        JOIN images i ON v.image_id = i.id
-        WHERE v.embedding MATCH ?
-        AND k = 1
-    """, (serialize_float32(query_embedding), ))
+    result = session.query(
+        Image.id,
+        Image.image_path,
+        Image.embedding.cosine_distance(query_embedding).label('distance')
+    ).order_by('distance').first()
 
-    row = cur.fetchone()
-    if not row:
+    if not result:
         return None
-    return row["id"], row["image_path"], row["distance"]
+
+    distance = float(result.distance) if result.distance is not None else 1.0
+    cosine_similarity = 1.0 - distance
+
+    # Always check that cosine_similarity is between -1 and 1
+    if cosine_similarity < -1.0:
+        cosine_similarity = -1.0
+    elif cosine_similarity > 1.0:
+        cosine_similarity = 1.0
+        
+    similarity_percent = round(((cosine_similarity + 1) / 2) * 100, 2)
+
+    return result.id, result.image_path, similarity_percent
