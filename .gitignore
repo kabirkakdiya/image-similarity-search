@@ -3,7 +3,7 @@ __pycache__/
 *.py[oc]
 build/
 dist/
-wheels/
+wheel
 *.egg-info
 
 # Virtual environments
@@ -19,3 +19,6 @@ images/
 # DB
 *.db
 *.sqlite
+
+# Others
+.DS_Store
