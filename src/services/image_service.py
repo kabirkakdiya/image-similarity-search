@@ -6,16 +6,25 @@ from database.connection import get_db_connection
 from database.crud_images import get_image_by_sha256, insert_image_metadata_and_vector
 
 async def download_image(url: str) -> bytes:
-    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        content_type = resp.headers.get("content-type", "")
-        if not content_type.startswith("image/"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"URL did not return an image (got content-type: {content_type})"
-            )
-        return resp.content
+    try:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()  # catches 4xx/5xx HTTP errors
+            content_type = resp.headers.get("content-type", "")
+            if not content_type.startswith("image/"):
+                raise ValueError(f"URL did not return an image (got content-type: {content_type})")
+            return resp.content
+
+    except httpx.TimeoutException:
+        raise ValueError(f"Request timed out while fetching: {url}")
+    except httpx.ConnectError:
+        raise ValueError(f"Could not connect to URL: {url}")
+    except httpx.HTTPStatusError as e:
+        raise ValueError(f"URL returned HTTP {e.response.status_code}: {url}")
+    except ValueError:
+        raise  # re-raise content-type error from above
+    except Exception as e:
+        raise ValueError(f"Failed to fetch image: {str(e)}")
 
 def path_to_url(file_path: str | None) -> str | None:
     """Convert an absolute/relative disk path to a publicly accessible URL."""

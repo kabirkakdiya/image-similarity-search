@@ -17,15 +17,18 @@ async def search_image(
     request: Request,
     file: Optional[UploadFile] = File(None),
     image_url: Optional[str] = Form(None),
-    future_use: bool = Form(False),
+    include: bool = Form(False),
 ):
     if not file and not image_url:
         raise HTTPException(status_code=400, detail="Provide either 'file' or 'image_url'")
     if file and image_url:
         raise HTTPException(status_code=400, detail="Provide only one of 'file' or 'image_url'")
 
-    image_bytes = await file.read() if file else await download_image(image_url)
-
+    image_bytes = None
+    try:
+        image_bytes = await file.read() if file else await download_image(image_url)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     sha256 = compute_sha256(image_bytes)
     conn = get_db_connection()
 
@@ -35,8 +38,9 @@ async def search_image(
         existing_path = get_image_by_sha256(conn, sha256)
         if existing_path:
             return SimilarityResponse(
-                similar_image_url=path_to_url(existing_path),
-                similarity_percent=100.0
+                matched_image=path_to_url(existing_path),
+                similarity=100.0,
+                duplicate=True
             )
 
         embedding = embedder.embed(image_bytes)
@@ -45,20 +49,23 @@ async def search_image(
         if result is None:
             similar_path = None
             similarity_percent = 0.0
+            duplicate = False
         else:
             _, similar_path, similarity_percent = result
-            print(f"Similarity computed: {similarity_percent}%")
+            duplicate= True
 
         stored = False
-        if future_use:
+
+        if include:
             saved_path = save_image_to_disk(image_bytes, sha256)
             insert_image_metadata_and_vector(conn, saved_path, sha256, embedding)
             stored = True
 
         return SimilarityResponse(
-            similar_image_url=path_to_url(similar_path),
-            similarity_percent=round(similarity_percent, 2),
-            stored=stored
+            matched_image=path_to_url(similar_path),
+            similarity=round(similarity_percent, 2),
+            stored=stored,
+            duplicate=duplicate
         )
 
     finally:
