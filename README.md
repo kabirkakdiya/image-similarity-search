@@ -37,11 +37,14 @@ Health check.
 ---
 
 ### `POST /api/v1/ingest`
-Ingest a batch of images(via URLs) into the vector store, in the background.
+Ingest a batch of images into the vector store.
 
-Accepts either:
-- An **image file** (multipart upload)
-- A **text file** containing one image URL per line (useful for seeding an empty database)
+Accepts a **plain text file** with one image URL per line. Images are downloaded and embedded in the background.
+
+```
+https://example.com/image1.jpg
+https://example.com/image2.jpg
+```
 
 ---
 
