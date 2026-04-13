@@ -27,14 +27,13 @@ psql -c "CREATE DATABASE image_duplication_detection_db;"
 uv run --env-file=./.env fastapi dev src/main.py
 ```
 
+> **Note:** On first run, the DINOv2 large model (~1.2 GB) will be downloaded automatically. The server won't be ready until this completes.
+
+> **GPU recommended:** Apple Silicon or NVIDIA GTX 1000 series (or better) is recommended for reasonable inference speed.
+
 ## API
 
 All endpoints are under `/api/v1`.
-
-### `GET /api/v1/`
-Health check.
-
----
 
 ### `POST /api/v1/ingest`
 Ingest a batch of images into the vector store.
