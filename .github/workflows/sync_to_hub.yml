@@ -18,4 +18,4 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://coderkube:$HF_TOKEN@huggingface.co/spaces/coderkube/Image-Similarity-Search main
+          git push https://coderkube:$HF_TOKEN@huggingface.co/spaces/coderkube/Image-Similarity-Search main
