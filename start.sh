@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
 set -e
 
-if [ ! -f .env ] && [ -f .env.example ]; then
-  cp .env.example .env
-fi
-
-exec uv run fastapi dev src/main.py --host 0.0.0.0 --port 7860
+exec uv run fastapi run src/main.py --host 0.0.0.0 --port 7860
