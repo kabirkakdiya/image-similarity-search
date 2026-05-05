@@ -3,7 +3,7 @@ title: Image Similarity Search
 emoji: 🔍
 colorFrom: blue
 colorTo: indigo
-sdk: gradio
+sdk: docker
 python_version: "3.14"
 app_file: src/main.py
 pinned: false
