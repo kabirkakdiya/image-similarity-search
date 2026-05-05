@@ -1,3 +1,14 @@
+---
+title: Image Similarity Search
+emoji: 🔍
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+python_version: "3.14"
+app_file: src/main.py
+pinned: false
+---
+
 # Image Similarity Search
 
 A FastAPI service that detects duplicate images using [DINOv2](https://github.com/facebookresearch/dinov2) (large) embeddings and cosine similarity, backed by PostgreSQL + pgvector.
